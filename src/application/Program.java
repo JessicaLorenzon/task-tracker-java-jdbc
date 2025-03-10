@@ -1,15 +1,20 @@
 package application;
 
-import java.sql.Connection;
-
-import db.DB;
+import model.dao.DaoFactory;
+import model.dao.TarefaDao;
+import model.entities.Tarefa;
+import model.entities.enums.TarefaStatus;
 
 public class Program {
 
 	public static void main(String[] args) {
-		
-		Connection conn = DB.getConnection();
-		DB.closeConnection();
+
+		TarefaDao tarefaDao = DaoFactory.criarTarefaDao();
+
+		System.out.println("---- TESTE ADICIONAR ----");
+		Tarefa novaTarefa = new Tarefa(null, "Nova tarefa", TarefaStatus.CONCLUIDA);
+		tarefaDao.adicionar(novaTarefa);
+		System.out.println("Tarefa criada! Novo id = " + novaTarefa.getId());
 
 	}
 
