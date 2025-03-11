@@ -4,7 +4,7 @@ public enum TarefaStatus {
 
 	PENDENTE("pendente"), 
 	CONCLUIDA("concluida"), 
-	EM_ANDAMENTO("em_progresso");
+	EM_PROGRESSO("em_progresso");
 
 	private String descricao;
 	
