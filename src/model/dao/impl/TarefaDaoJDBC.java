@@ -27,11 +27,10 @@ public class TarefaDaoJDBC implements TarefaDao {
 	public void adicionar(Tarefa tarefa) {
 		PreparedStatement st = null;
 		try {
-			st = conn.prepareStatement("INSERT INTO tarefa " + "(conteudo, status) " + "VALUES " + "(?, ?)",
+			st = conn.prepareStatement("INSERT INTO tarefa " + "(conteudo) " + "VALUES " + "(?)",
 					Statement.RETURN_GENERATED_KEYS);
 
 			st.setString(1, tarefa.getConteudo());
-			st.setString(2, tarefa.getStatus().getDescricao());
 
 			int linhasAfetadas = st.executeUpdate();
 
@@ -126,6 +125,41 @@ public class TarefaDaoJDBC implements TarefaDao {
 		ResultSet rs = null;
 		try {
 			st = conn.prepareStatement("SELECT tarefa.* " + "FROM tarefa");
+
+			rs = st.executeQuery();
+
+			List<Tarefa> list = new ArrayList<>();
+			while (rs.next()) {
+				Tarefa tarefa = new Tarefa();
+				tarefa.setId(rs.getInt("id"));
+				tarefa.setConteudo(rs.getString("conteudo"));
+				tarefa.setStatus(TarefaStatus.valueOf(rs.getString("status").toUpperCase()));
+
+				Timestamp timestamp = rs.getTimestamp("criado_em");
+				timestamp = rs.getTimestamp("atualizado_em");
+				if (timestamp != null) {
+					tarefa.setDataCriacao(timestamp.toLocalDateTime());
+					tarefa.setDataAtualizacao(timestamp.toLocalDateTime());
+				}
+				list.add(tarefa);
+			}
+			return list;
+		} catch (SQLException e) {
+			throw new DbException(e.getMessage());
+		} finally {
+			DB.closeResultSet(rs);
+			DB.closeStatement(st);
+		}
+	}
+
+	@Override
+	public List<Tarefa> encontrarPorStatus(TarefaStatus status) {
+		PreparedStatement st = null;
+		ResultSet rs = null;
+		try {
+			st = conn.prepareStatement("SELECT * " + "FROM tarefa " + "WHERE tarefa.status = ?");
+
+			st.setString(1, status.getDescricao());
 
 			rs = st.executeQuery();
 

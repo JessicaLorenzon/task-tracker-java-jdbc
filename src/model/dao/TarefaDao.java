@@ -3,6 +3,7 @@ package model.dao;
 import java.util.List;
 
 import model.entities.Tarefa;
+import model.entities.enums.TarefaStatus;
 
 public interface TarefaDao {
 
@@ -15,5 +16,7 @@ public interface TarefaDao {
 	Tarefa encontrarPorId(int id);
 	
 	List<Tarefa> motrarTodas();
+	
+	List<Tarefa> encontrarPorStatus(TarefaStatus status);
 
 }

@@ -2,6 +2,7 @@ package model.entities;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Objects;
 
 import model.entities.enums.TarefaStatus;
@@ -16,13 +17,13 @@ public class Tarefa implements Serializable {
 	private LocalDateTime dataCriacao;
 	private LocalDateTime dataAtualizacao;
 
+	DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
+
 	public Tarefa() {
 	}
 
-	public Tarefa(Integer id, String conteudo, TarefaStatus status) {
-		this.id = id;
+	public Tarefa(String conteudo) {
 		this.conteudo = conteudo;
-		this.status = status;
 	}
 
 	public Integer getId() {
@@ -84,8 +85,9 @@ public class Tarefa implements Serializable {
 
 	@Override
 	public String toString() {
-		return "Tarefa [id=" + id + ", conteudo=" + conteudo + ", status=" + status + ", dataCriacao=" + dataCriacao
-				+ ", dataAtualizacao=" + dataAtualizacao + "]";
+		return "id = " + getId() + ", \"" + getConteudo() + "\", status = " + getStatus()
+				+ ", criada em = " + getDataCriacao().format(fmt) + ", atualizada em = "
+				+ getDataAtualizacao().format(fmt);
 	}
 
 }
