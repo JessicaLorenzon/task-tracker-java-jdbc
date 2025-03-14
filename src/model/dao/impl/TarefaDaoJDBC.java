@@ -27,60 +27,21 @@ public class TarefaDaoJDBC implements TarefaDao {
 	public void adicionar(Tarefa tarefa) {
 		PreparedStatement st = null;
 		try {
-			st = conn.prepareStatement("INSERT INTO tarefa " + "(conteudo) " + "VALUES " + "(?)",
-					Statement.RETURN_GENERATED_KEYS);
+			st = conn.prepareStatement("INSERT INTO tarefa (conteudo) VALUES (?)", Statement.RETURN_GENERATED_KEYS);
 
 			st.setString(1, tarefa.getConteudo());
 
-			int linhasAfetadas = st.executeUpdate();
+			st.executeUpdate();
 
-			if (linhasAfetadas > 0) {
-				ResultSet rs = st.getGeneratedKeys();
-				if (rs.next()) {
-					int id = rs.getInt(1);
-					tarefa.setId(id);
-				}
-				DB.closeResultSet(rs);
-			} else {
-				throw new DbException("Erro inesperado! Nenhuma linha afetada!");
-			}
-		} catch (SQLException e) {
-			throw new DbException(e.getMessage());
-		} finally {
-			DB.closeStatement(st);
-		}
-	}
-
-	@Override
-	public Tarefa encontrarPorId(int id) {
-		PreparedStatement st = null;
-		ResultSet rs = null;
-		try {
-			st = conn.prepareStatement("SELECT tarefa.* " + "FROM tarefa " + "WHERE tarefa.Id = ?");
-
-			st.setInt(1, id);
-
-			rs = st.executeQuery();
+			ResultSet rs = st.getGeneratedKeys();
 
 			if (rs.next()) {
-				Tarefa tarefa = new Tarefa();
-				tarefa.setId(rs.getInt("id"));
-				tarefa.setConteudo(rs.getString("conteudo"));
-				tarefa.setStatus(TarefaStatus.valueOf(rs.getString("status").toUpperCase()));
-
-				Timestamp timestamp = rs.getTimestamp("criado_em");
-				timestamp = rs.getTimestamp("atualizado_em");
-				if (timestamp != null) {
-					tarefa.setDataCriacao(timestamp.toLocalDateTime());
-					tarefa.setDataAtualizacao(timestamp.toLocalDateTime());
-				}
-				return tarefa;
+				tarefa.setId(rs.getInt(1));
 			}
-			return null;
+			DB.closeResultSet(rs);
 		} catch (SQLException e) {
 			throw new DbException(e.getMessage());
 		} finally {
-			DB.closeResultSet(rs);
 			DB.closeStatement(st);
 		}
 	}
@@ -89,7 +50,7 @@ public class TarefaDaoJDBC implements TarefaDao {
 	public void atualizar(Tarefa tarefa) {
 		PreparedStatement st = null;
 		try {
-			st = conn.prepareStatement("UPDATE tarefa " + "SET conteudo = ?, status = ? " + "WHERE id = ?");
+			st = conn.prepareStatement("UPDATE tarefa SET conteudo = ?, status = ? WHERE id = ?");
 
 			st.setString(1, tarefa.getConteudo());
 			st.setString(2, tarefa.getStatus().getDescricao());
@@ -107,7 +68,7 @@ public class TarefaDaoJDBC implements TarefaDao {
 	public void remover(int id) {
 		PreparedStatement st = null;
 		try {
-			st = conn.prepareStatement("DELETE FROM tarefa " + "WHERE Id = ?");
+			st = conn.prepareStatement("DELETE FROM tarefa WHERE id = ?");
 
 			st.setInt(1, id);
 
@@ -123,27 +84,65 @@ public class TarefaDaoJDBC implements TarefaDao {
 	public List<Tarefa> motrarTodas() {
 		PreparedStatement st = null;
 		ResultSet rs = null;
+		List<Tarefa> list = new ArrayList<>();
+
 		try {
-			st = conn.prepareStatement("SELECT tarefa.* " + "FROM tarefa");
+			st = conn.prepareStatement("SELECT * FROM tarefa");
 
 			rs = st.executeQuery();
 
-			List<Tarefa> list = new ArrayList<>();
 			while (rs.next()) {
-				Tarefa tarefa = new Tarefa();
-				tarefa.setId(rs.getInt("id"));
-				tarefa.setConteudo(rs.getString("conteudo"));
-				tarefa.setStatus(TarefaStatus.valueOf(rs.getString("status").toUpperCase()));
-
-				Timestamp timestamp = rs.getTimestamp("criado_em");
-				timestamp = rs.getTimestamp("atualizado_em");
-				if (timestamp != null) {
-					tarefa.setDataCriacao(timestamp.toLocalDateTime());
-					tarefa.setDataAtualizacao(timestamp.toLocalDateTime());
-				}
-				list.add(tarefa);
+				list.add(mapearTarefa(rs));
 			}
-			return list;
+		} catch (SQLException e) {
+			throw new DbException(e.getMessage());
+		} finally {
+			DB.closeResultSet(rs);
+			DB.closeStatement(st);
+		}
+		return list;
+	}
+
+	@Override
+	public List<Tarefa> encontrarPorStatus(TarefaStatus status) {
+		PreparedStatement st = null;
+		ResultSet rs = null;
+		List<Tarefa> list = new ArrayList<>();
+
+		try {
+			st = conn.prepareStatement("SELECT * FROM tarefa WHERE status = ?");
+
+			st.setString(1, status.getDescricao());
+
+			rs = st.executeQuery();
+
+			while (rs.next()) {
+				list.add(mapearTarefa(rs));
+			}
+		} catch (SQLException e) {
+			throw new DbException(e.getMessage());
+		} finally {
+			DB.closeResultSet(rs);
+			DB.closeStatement(st);
+		}
+		return list;
+	}
+
+	@Override
+	public Tarefa encontrarPorId(int id) {
+		PreparedStatement st = null;
+		ResultSet rs = null;
+		try {
+			st = conn.prepareStatement("SELECT * FROM tarefa WHERE id = ?");
+
+			st.setInt(1, id);
+
+			rs = st.executeQuery();
+
+			if (rs.next()) {
+				return mapearTarefa(rs);
+			}
+			return null;
 		} catch (SQLException e) {
 			throw new DbException(e.getMessage());
 		} finally {
@@ -152,38 +151,21 @@ public class TarefaDaoJDBC implements TarefaDao {
 		}
 	}
 
-	@Override
-	public List<Tarefa> encontrarPorStatus(TarefaStatus status) {
-		PreparedStatement st = null;
-		ResultSet rs = null;
-		try {
-			st = conn.prepareStatement("SELECT * " + "FROM tarefa " + "WHERE tarefa.status = ?");
+	private Tarefa mapearTarefa(ResultSet rs) throws SQLException {
+		Tarefa tarefa = new Tarefa();
+		tarefa.setId(rs.getInt("id"));
+		tarefa.setConteudo(rs.getString("conteudo"));
+		tarefa.setStatus(TarefaStatus.fromString(rs.getString("status")));
 
-			st.setString(1, status.getDescricao());
+		Timestamp timestampCriacao = rs.getTimestamp("criado_em");
+		Timestamp timestampAtualizacao = rs.getTimestamp("atualizado_em");
 
-			rs = st.executeQuery();
-
-			List<Tarefa> list = new ArrayList<>();
-			while (rs.next()) {
-				Tarefa tarefa = new Tarefa();
-				tarefa.setId(rs.getInt("id"));
-				tarefa.setConteudo(rs.getString("conteudo"));
-				tarefa.setStatus(TarefaStatus.valueOf(rs.getString("status").toUpperCase()));
-
-				Timestamp timestamp = rs.getTimestamp("criado_em");
-				timestamp = rs.getTimestamp("atualizado_em");
-				if (timestamp != null) {
-					tarefa.setDataCriacao(timestamp.toLocalDateTime());
-					tarefa.setDataAtualizacao(timestamp.toLocalDateTime());
-				}
-				list.add(tarefa);
-			}
-			return list;
-		} catch (SQLException e) {
-			throw new DbException(e.getMessage());
-		} finally {
-			DB.closeResultSet(rs);
-			DB.closeStatement(st);
+		if (timestampCriacao != null) {
+			tarefa.setDataCriacao(timestampCriacao.toLocalDateTime());
 		}
+		if (timestampAtualizacao != null) {
+			tarefa.setDataAtualizacao(timestampAtualizacao.toLocalDateTime());
+		}
+		return tarefa;
 	}
 }

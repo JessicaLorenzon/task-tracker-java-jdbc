@@ -85,9 +85,8 @@ public class Tarefa implements Serializable {
 
 	@Override
 	public String toString() {
-		return "id = " + getId() + ", \"" + getConteudo() + "\", status = " + getStatus()
-				+ ", criada em = " + getDataCriacao().format(fmt) + ", atualizada em = "
-				+ getDataAtualizacao().format(fmt);
+		return "id = " + getId() + ", \"" + getConteudo() + "\", status = " + getStatus() + ", criada em = "
+				+ getDataCriacao().format(fmt) + ", atualizada em = " + getDataAtualizacao().format(fmt);
 	}
 
 }
